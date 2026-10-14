@@ -14,6 +14,14 @@
 
 __BEGIN_DECLS
 
+//
+// gCRAnnotations facilitates libraries and applications to have self-reporting crash logs.
+//
+// Research Sources:
+//  - https://alastairs-place.net/blog/2013/01/10/interesting-os-x-crash-report-tidbits/
+//  - https://developer.apple.com/documentation/xcode/examining-the-fields-in-a-crash-report
+//
+
 #define CRASH_REPORTER_CLIENT_HIDDEN        __attribute__((visibility("hidden")))
 
 // gCRAnnotations should always be in __DATA,__crash_info
@@ -21,19 +29,17 @@ __BEGIN_DECLS
 #define CRASHREPORTER_ANNOTATIONS_SECTION   "__crash_info"
 #define CRASHREPORTER_ANNOTATIONS_VERSION   5
 
-// if these are all const char pointers then perhaps the fields should be uintptr_t for 32-bit platforms.
 typedef struct crashreporter_annotations_t {
     uint64_t version;
-    uint64_t message;
-    uint64_t signature_string;
-    uint64_t backtrace;
-    uint64_t message2;
-    uint64_t thread;            // 'Crashed Thread' ?
-    uint64_t dialog_mode;
-    uint64_t abort_cause;       // this is used by libplatform
+    uint64_t message;           // 'Application Specific Information'
+    uint64_t signature_string;  // 'Application Specific Signatures'
+    uint64_t backtrace;         // 'Application Specific Backtrace'
+    uint64_t message2;          // TODO: is included in ASI?
+    uint64_t thread;            // unsure
+    uint64_t dialog_mode;       // unsure
+    uint64_t abort_cause;       // OS_BUG_INTERNAL and OS_BUG_CLIENT use this to include the failed condition.
 } crashreporter_annotations_t;
 
-// image-local crash reporter annotations.
 CRASH_REPORTER_CLIENT_HIDDEN
 extern crashreporter_annotations_t gCRAnnotations;
 
@@ -41,11 +47,15 @@ extern crashreporter_annotations_t gCRAnnotations;
 #define _crc_make_getter(attr)  ((const char *)gCRAnnotations.attr)
 #define _crc_make_setter(attr, v)  (gCRAnnotations.attr = (uint64_t)(v))
 
-// this is typically where messages are stored.
 #define CRGetCrashLogMessage() _crc_make_getter(message)
 #define CRSetCrashLogMessage(msg) _crc_make_setter(message, msg)
 
-// some clients make use of this, see dyld
+#define CRGetCrashLogBacktrace() _crc_make_getter(backtrace)
+#define CRSetCrashLogBacktrace(trace) _crc_make_setter(backtrace, trace)
+
+#define CRGetCrashLogSignatureString() _crc_make_getter(signature_string)
+#define CRSetCrashLogSignatureString(sig) _crc_make_setter(signature_string, sig)
+
 #define CRGetCrashLogMessage2() _crc_make_getter(message2)
 #define CRSetCrashLogMessage2(msg) _crc_make_setter(message2, msg)
 
